@@ -3,6 +3,8 @@ package main
 // convert -modulate to change brightness, saturation and hue
 
 import (
+	"log"
+
 	"gopkg.in/gographics/imagick.v2/imagick"
 )
 
@@ -10,15 +12,25 @@ func main() {
 	imagick.Initialize()
 	defer imagick.Terminate()
 
-	mw := imagick.NewMagickWand()
-	mw.ReadImage("squircle2.png")
+	// Get colors
+	im := imagick.NewMagickWand()
+	im.ReadImage("firefox.png")
 
-	colorize := imagick.NewPixelWand()
-	colorize.SetColor("green")
+	im.SetImageDepth(8)
+	ncolors, palette := im.GetImageHistogram()
+	log.Printf("%d colors\n", ncolors)
+
+	// colorize background
+	bg := imagick.NewMagickWand()
+	bg.ReadImage("squircle2.png")
+
+	//colorize := imagick.NewPixelWand()
+	//colorize.SetColor("green")
 
 	opacity := imagick.NewPixelWand()
 	opacity.SetColor("rgb(60%,60%,60%)")
 
-	mw.ColorizeImage(colorize, opacity)
-	mw.WriteImage("result.png")
+	bg.ColorizeImage(palette[1000], opacity)
+	bg.WriteImage("result.png")
+
 }
