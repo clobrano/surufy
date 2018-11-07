@@ -14,6 +14,21 @@ import (
 	"gopkg.in/gographics/imagick.v2/imagick"
 )
 
+func get_colors(k int, img image.Image) ([]prominentcolor.ColorItem, error) {
+	mask := prominentcolor.GetDefaultMasks()
+	resizeSize := uint(126)
+
+	conf := prominentcolor.ArgumentNoCropping
+
+	res, err := prominentcolor.KmeansWithAll(k, img, conf, resizeSize, mask)
+	if err != nil {
+		log.Fatal("can't get prominent color", err)
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func main() {
 	input := flag.String("input", "", "path to the input image")
 	output := flag.String("output", "", "path to the output image")
@@ -26,18 +41,18 @@ func main() {
 	f, err := os.Open(*input)
 	defer f.Close()
 	if err != nil {
-		log.Fatal("cannot open file", *input)
+		log.Fatal(*input, " :cannot open file")
 	}
 
 	image.RegisterFormat("png", "png", png.Decode, png.DecodeConfig)
-	image, err := png.Decode(f)
+	img, err := png.Decode(f)
 	if err != nil {
-		log.Fatal("cannot decode image ", err)
+		log.Fatal(*input, " :cannot decode img ", err)
 	}
 
-	colors, err := prominentcolor.Kmeans(image)
+	colors, err := get_colors(5, img)
 	if err != nil {
-		log.Fatal("kmeans failed", err)
+		log.Fatal(*input, " failed")
 	}
 
 	// colorize background
@@ -45,10 +60,13 @@ func main() {
 	bg.ReadImage(*tile)
 
 	color := imagick.NewPixelWand()
-	color.SetColor(fmt.Sprintf("#%s", colors[0].AsString()))
+	if len(colors) == 0 {
+		log.Fatal("no colors")
+	}
 
+	color.SetColor(fmt.Sprintf("#%s", colors[1].AsString()))
 	opacity := imagick.NewPixelWand()
-	opacity.SetColor("rgb(60%,60%,60%)")
+	opacity.SetColor("rgb(50%,50%,50%)")
 
 	bg.ColorizeImage(color, opacity)
 
@@ -56,14 +74,13 @@ func main() {
 	im := imagick.NewMagickWand()
 	im.ReadImage(*input)
 
-	bg.ResizeImage(im.GetImageHeight(), im.GetImageWidth(), imagick.FILTER_CUBIC, 1)
+	bg.ResizeImage(im.GetImageHeight(), im.GetImageWidth(), imagick.FILTER_SINC, 1)
 
-	var perc uint
-	perc = 80
+	perc := uint(80)
 	width_new := (im.GetImageWidth() * perc) / 100
 	height_new := (im.GetImageHeight() * perc) / 100
 
-	im.ResizeImage(height_new, width_new, imagick.FILTER_CUBIC, 1)
+	im.ResizeImage(height_new, width_new, imagick.FILTER_SINC, 1)
 
 	// composite images
 	var x, y int
@@ -73,5 +90,4 @@ func main() {
 
 	// Save result
 	bg.WriteImage(*output)
-
 }
