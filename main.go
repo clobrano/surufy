@@ -9,6 +9,7 @@ import (
 	"image/png"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/EdlinOrg/prominentcolor"
 	"gopkg.in/gographics/imagick.v2/imagick"
@@ -33,6 +34,7 @@ func main() {
 	input := flag.String("input", "", "path to the input image")
 	output := flag.String("output", "", "path to the output image")
 	tile := flag.String("tile", "", "path to the tile background")
+	color_id := flag.String("color-id", "1", "color id to use from the palette (zero based)")
 	flag.Parse()
 
 	imagick.Initialize()
@@ -59,14 +61,20 @@ func main() {
 	bg := imagick.NewMagickWand()
 	bg.ReadImage(*tile)
 
+	id, err := strconv.Atoi(*color_id)
+	if err != nil {
+		log.Fatal("could not convert color_id %s\n", *color_id)
+	}
+
 	color := imagick.NewPixelWand()
-	if len(colors) == 0 {
+	if len(colors) < id+1 {
 		log.Fatal("no colors")
 	}
 
-	color.SetColor(fmt.Sprintf("#%s", colors[1].AsString()))
+	color.SetColor(fmt.Sprintf("#%s", colors[id].AsString()))
 	opacity := imagick.NewPixelWand()
-	opacity.SetColor("rgb(50%,50%,50%)")
+
+	opacity.SetColor("rgb(90%,90%,90%)")
 
 	bg.ColorizeImage(color, opacity)
 
@@ -74,7 +82,8 @@ func main() {
 	im := imagick.NewMagickWand()
 	im.ReadImage(*input)
 
-	bg.ResizeImage(im.GetImageHeight(), im.GetImageWidth(), imagick.FILTER_SINC, 1)
+	//bg.ResizeImage(im.GetImageHeight(), im.GetImageWidth(), imagick.FILTER_SINC, 1)
+	im.ResizeImage(bg.GetImageHeight(), bg.GetImageWidth(), imagick.FILTER_SINC, 1)
 
 	perc := uint(80)
 	width_new := (im.GetImageWidth() * perc) / 100
