@@ -2,6 +2,9 @@ package main
 
 // convert -modulate to change brightness, saturation and hue
 
+// TODO manage all errors
+// TODO support for non PNG images?
+
 import (
 	"flag"
 	"fmt"
@@ -9,7 +12,6 @@ import (
 	"image/png"
 	"log"
 	"os"
-	"strconv"
 
 	"github.com/EdlinOrg/prominentcolor"
 	"gopkg.in/gographics/imagick.v2/imagick"
@@ -17,11 +19,10 @@ import (
 
 func get_colors(k int, img image.Image) ([]prominentcolor.ColorItem, error) {
 	mask := prominentcolor.GetDefaultMasks()
-	resizeSize := uint(126)
-
 	conf := prominentcolor.ArgumentNoCropping
+	size := uint(126)
 
-	res, err := prominentcolor.KmeansWithAll(k, img, conf, resizeSize, mask)
+	res, err := prominentcolor.KmeansWithAll(k, img, conf, size, mask)
 	if err != nil {
 		log.Fatal("can't get prominent color", err)
 		return nil, err
@@ -34,7 +35,6 @@ func main() {
 	input := flag.String("input", "", "path to the input image")
 	output := flag.String("output", "", "path to the output image")
 	tile := flag.String("tile", "", "path to the tile background")
-	color_id := flag.String("color-id", "1", "color id to use from the palette (zero based)")
 	flag.Parse()
 
 	imagick.Initialize()
@@ -58,37 +58,31 @@ func main() {
 	}
 
 	// colorize background
+	var id int
+	if len(colors) > 2 {
+		id = 2
+	} else if len(colors) > 1 {
+		id = 1
+	} else {
+		id = 0
+	}
+	color := imagick.NewPixelWand()
+	color.SetColor(fmt.Sprintf("#%s", colors[id].AsString()))
+
+	opacity := imagick.NewPixelWand()
+	opacity.SetColor("rgb(70%,70%,70%)")
+
 	bg := imagick.NewMagickWand()
 	bg.ReadImage(*tile)
-
-	id, err := strconv.Atoi(*color_id)
-	if err != nil {
-		log.Fatal("could not convert color_id %s\n", *color_id)
-	}
-
-	color := imagick.NewPixelWand()
-	if len(colors) < id+1 {
-		log.Fatal("no colors")
-	}
-
-	color.SetColor(fmt.Sprintf("#%s", colors[id].AsString()))
-	opacity := imagick.NewPixelWand()
-
-	opacity.SetColor("rgb(90%,90%,90%)")
-
 	bg.ColorizeImage(color, opacity)
 
 	// resize images
+	perc := uint(80)
+	width_new := (bg.GetImageWidth() * perc) / 100
+	height_new := (bg.GetImageHeight() * perc) / 100
+
 	im := imagick.NewMagickWand()
 	im.ReadImage(*input)
-
-	//bg.ResizeImage(im.GetImageHeight(), im.GetImageWidth(), imagick.FILTER_SINC, 1)
-	im.ResizeImage(bg.GetImageHeight(), bg.GetImageWidth(), imagick.FILTER_SINC, 1)
-
-	perc := uint(80)
-	width_new := (im.GetImageWidth() * perc) / 100
-	height_new := (im.GetImageHeight() * perc) / 100
-
 	im.ResizeImage(height_new, width_new, imagick.FILTER_SINC, 1)
 
 	// composite images
