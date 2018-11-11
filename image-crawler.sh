@@ -39,7 +39,13 @@ crawls() {
         echo
         for folder in /usr/share/icons/hicolor/$size/apps; do
             for icon in `ls ${folder}`; do
-                echo processing $icon - $size
+
+                extension="${icon##*.}"
+                if [[ $extension != "png" ]]; then
+                    continue;
+                fi
+
+                echo processing $icon
                 if [[ $exclude =~ $icon ]]; then
                     # TODO fix regex maching (e.g. 'goa-' does not work)
                     echo "  excluded"
@@ -52,6 +58,12 @@ crawls() {
                 fi
 
                 input=$folder/$icon
+                color=$(convert $input +dither -colors 3 -unique-colors txt: | grep -e "^0,0" | cut -d' ' -f4)
+
+                if [[ $color =~ "#000000" ]]; then
+                    echo "  bad color $color"
+                    continue
+                fi
 
                 # generate all the sizes from the logo at higher resolution
                 for ssize in ${sizelist}; do
@@ -62,9 +74,12 @@ crawls() {
                         break
                     fi
 
-                    set -x
-                    go-tile -tile "tile-"$ssize".png" -input $input -output $output
-                    set +x
+                    echo "  generating $icon, size $ssize, color $color"
+                    go-tile\
+                        -input $input\
+                        -tile "tile-"$ssize".png"\
+                        -hex $color\
+                        -output $output
                 done
             done
         done
