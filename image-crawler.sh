@@ -24,7 +24,7 @@ declare -A redirect=(
 
 mkdirs() {
     for size in ${sizelist}; do
-        path='/home/carlo/.local/share/icons/Yaru/'$size'/apps'
+        path='/home/carlo/.local/share/icons/Yaru/'${redirect[$size]}'/apps'
         if [ ! -f ${path} ]; then
             echo making $path
             mkdir -p ${path}
@@ -59,6 +59,8 @@ crawls() {
 
                 input=$folder/$icon
                 color=$(convert $input +dither -colors 3 -unique-colors txt: | grep -e "^0,0" | cut -d' ' -f4)
+                # cut the alpha value
+                color=${color:0:7}
 
                 if [[ $color =~ "#000000" ]]; then
                     echo "  bad color $color"
@@ -75,11 +77,9 @@ crawls() {
                     fi
 
                     echo "  generating $icon, size $ssize, color $color"
-                    go-tile\
-                        -input $input\
-                        -tile "tile-"$ssize".png"\
-                        -hex $color\
-                        -output $output
+                    convert \( "tile-"$ssize".png" -fill "$color" -tint 100 \) \
+                        \( $input[$ssize] -resize 80% \)\
+                        -gravity center -composite $output
                 done
             done
         done
