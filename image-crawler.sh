@@ -2,11 +2,11 @@
 # -*- coding: UTF-8 -*-
 
 # icon sizes to watch in hicolor directory
-hicolor='512x512 256x256 128x128 96x96 64x64 48x48 32x32'
+hicolor='512x512 256x256 96x96 64x64 48x48 32x32'
 
 # icon sizes to generate
-#sizelist='32x32 48x48 64x64 96x96 128x128 256x256 32x32@2x 48x48@2x 256x256@2x'
-sizelist='32x32 48x48 64x64 96x96 128x128 256x256 512x512'
+#sizelist='32x32 48x48 64x64 96x96 256x256 32x32@2x 48x48@2x 256x256@2x'
+sizelist='32x32 48x48 64x64 96x96 256x256 512x512'
 
 # icons and patterns to be excluded
 exclude='goa- gcr- gdm- preferences- symbolic ubuntu-logo-icon.png distributor-logo.png'
@@ -58,7 +58,9 @@ crawls() {
                 fi
 
                 input=$folder/$icon
-                color=$(convert $input +dither -colors 3 -unique-colors txt: | grep -e "^0,0" | cut -d' ' -f4)
+                color=$(convert $input -geometry 16x16 +dither -colors 5 -unique-colors txt: |\
+                    grep -e "^1,0" |\
+                    cut -d' ' -f4)
                 # cut the alpha value
                 color=${color:0:7}
 
@@ -77,7 +79,7 @@ crawls() {
                     fi
 
                     echo "  generating $icon, size $ssize, color $color"
-                    convert \( "tile-"$ssize".png" -fill "$color" -tint 100 \) \
+                    convert \( "tile-"$ssize".png" -fill "$color" -tint 100 -modulate 130,100,100 \) \
                         \( $input[$ssize] -resize 80% \)\
                         -gravity center -composite $output
                 done
