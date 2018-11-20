@@ -1,0 +1,2 @@
+## Post install hook to generate a tiled icon in Suru style
+DPkg::Post-Invoke {"bash /usr/lib/surufy/image-crawler.sh";};
