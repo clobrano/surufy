@@ -1,10 +1,15 @@
-## options
-## -i, --input <file>
-## -f, --format <wxh>
-## -c, --color <hex>
-## -s, --shadow <hex>
-## -o, --output <file>
+#!/usr/bin/env bash
+# -*- coding: UTF-8 -*-
+## Place the input logo PNG into a tile/squircle in Suru icon set style
+## usage:
+##      surufy.sh --input <logo.png> --format <WxH> --color <hex-color> --shadow <hex-color> -output <result.png>
+## options:
+##     -i, --input <file>   The input logo image in PNG format
+##     -f, --format <wxh>   The size of the resulting PNG [default: 512x512]
+##     -o, --output <file>  The name of the resulting image in PNG format
 # GENERATED_CODE: start
+# Default values
+_format=512x512
 
 # No-arguments is not allowed
 [ $# -eq 0 ] && sed -ne 's/^## \(.*\)/\1/p' $0 && exit 1
@@ -15,8 +20,6 @@ for arg in "$@"; do
   case "$arg" in
 "--input") set -- "$@" "-i";;
 "--format") set -- "$@" "-f";;
-"--color") set -- "$@" "-c";;
-"--shadow") set -- "$@" "-s";;
 "--output") set -- "$@" "-o";;
   *) set -- "$@" "$arg"
   esac
@@ -27,14 +30,12 @@ function print_illegal() {
 }
 
 # Parsing flags and arguments
-while getopts 'hi:f:c:s:o:' OPT; do
+while getopts 'hi:f:o:' OPT; do
     case $OPT in
         h) sed -ne 's/^## \(.*\)/\1/p' $0
            exit 1 ;;
         i) _input=$OPTARG ;;
         f) _format=$OPTARG ;;
-        c) _color=$OPTARG ;;
-        s) _shadow=$OPTARG ;;
         o) _output=$OPTARG ;;
         \?) print_illegal $@ >&2;
             echo "---"
@@ -45,9 +46,11 @@ while getopts 'hi:f:c:s:o:' OPT; do
 done
 # GENERATED_CODE: end
 
+set -ue
+source ./surufy
 
-# compose tile, logo outline and actual logo
-convert \( "tile-"$_format".png" -fill "$_color" -tint 100 -modulate 130,100,100 \) \
-        \( $_input[$_format] -resize 81%  -background $_shadow -shadow 60x1 \) -gravity center -composite \
-        \( $_input[$_format] -resize 80% \)\
-        -gravity center -composite $_output
+_palette=$(get_palette $_input)
+_background=$(get_color_from_palette "$_palette" 1)
+_shadow=$(get_color_from_palette "$_palette" 0)
+
+surufy $_input $_format $_background $_shadow $_output

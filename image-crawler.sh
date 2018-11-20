@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 # -*- coding: UTF-8 -*-
 
+source ./surufy
+
 # icon sizes to watch in hicolor directory
 hicolor='512x512 256x256 96x96 64x64 128x128 48x48 32x32'
 
 # icon sizes to generate
-#sizelist='32x32 48x48 64x64 96x96 256x256 32x32@2x 48x48@2x 256x256@2x'
 sizelist='32x32 48x48 64x64 96x96 128x128 256x256 512x512'
 
 # icons and patterns to be excluded
@@ -31,6 +32,7 @@ mkdirs() {
         fi
     done
 }
+
 
 crawls() {
     for size in ${hicolor}; do
@@ -58,33 +60,33 @@ crawls() {
                 fi
 
                 input=$folder/$icon
-                palette=$(convert $input -geometry 16x16 +dither -colors 5 -unique-colors txt:)
-                color=$(echo "$palette" | grep -e "^1,0" | cut -d' ' -f4)
-                shadow=$(echo "$palette" | grep -e "^0,0" | cut -d' ' -f4)
 
-                # cut the alpha value
-                #color=${color:0:7}
+                palette=$(get_palette $input)
 
-                if [[ $color =~ "#000000" ]]; then
-                    echo "  bad color $color"
+                background=$(get_color_from_palette "$palette" 1)
+                background=${background:0:7}
+                if [[ $background =~ "#000000" ]]; then
+                    echo "  bad color $background"
+                    continue
+                fi
+
+                shadow=$(get_color_from_palette "$palette" 0)
+                shadow=${shadow:0:7}
+                if [[ $shadow =~ "#000000" ]]; then
+                    echo "  bad color $shadow"
                     continue
                 fi
 
                 # generate all the sizes from the logo at higher resolution
                 for ssize in ${sizelist}; do
                     output='/home/carlo/.local/share/icons/Yaru/'${redirect[$ssize]}'/apps/'$icon
-
                     if [ -f ${output} ]; then
                         echo "  already generated"
                         break
                     fi
 
-                    echo "  generating $icon, size $ssize, color $color"
-                    # compose tile, logo outline and actual logo
-                    convert \( "tile-"$ssize".png" -fill "$color" -tint 100 -modulate 130,100,100 \) \
-                            \( $input[$ssize] -resize 81%  -background $shadow -shadow 60x1 \) -gravity center -composite \
-                            \( $input[$ssize] -resize 80% \)\
-                            -gravity center -composite $output
+                    echo "  generating $icon with: size $ssize, background $background, shadow $shadow"
+                    surufy "$input" "$ssize" "$background" "$shadow" "$output"
                 done
             done
         done
