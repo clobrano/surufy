@@ -49,7 +49,7 @@ done
 set -ue
 source ./surufy
 
-_palette=$(get_palette $_input)
+_palette=$(get_palette_from_image $_input)
 _background=$(get_color_from_palette "$_palette" 1)
 _shadow=$(get_color_from_palette "$_palette" 0)
 

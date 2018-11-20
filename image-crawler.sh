@@ -61,7 +61,7 @@ crawls() {
 
                 input=$folder/$icon
 
-                palette=$(get_palette $input)
+                palette=$(get_palette_from_image $input)
 
                 background=$(get_color_from_palette "$palette" 1)
                 background=${background:0:7}
