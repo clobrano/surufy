@@ -2,7 +2,7 @@
 # -*- coding: UTF-8 -*-
 ## Place the input logo PNG into a tile/squircle in Suru icon set style
 ## usage:
-##      surufy.sh --input <logo.png> --format <WxH> --color <hex-color> --shadow <hex-color> -output <result.png>
+##      surufy.sh --input <logo.png> --format <WxH> -output <result.png>
 ## options:
 ##     -i, --input <file>   The input logo image in PNG format
 ##     -f, --format <wxh>   The size of the resulting PNG [default: 512x512]
